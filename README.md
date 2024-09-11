@@ -1,11 +1,11 @@
 # Flute
 
-Flute is a beautiful, easily composable HTML5 generation library in Common Lisp. It's
+Flute is a beautiful, easily-composable, HTML5 generation library in Common Lisp. It's:
 
-- Simple: the most simplistic syntax, for builtin and customized elements;
-- Easy to debug: pretty print generated html snippet in REPL;
-- Powerful: help you define reusable and composable components, like that in React
-- Modern: focus only on HTML5
+- Simple: elegant syntax for built-in and custom elements
+- Easy to debug: pretty print generated html snippets in the REPL
+- Powerful: define reusable and composable components, like in React
+- Modern: solely focused on HTML5
 
 # Getting started
 
@@ -16,12 +16,12 @@ Flute is a beautiful, easily composable HTML5 generation library in Common Lisp.
 (ql:quickload :flute-test)
 ```
 
-Then define a new package specifically for HTML generation, in its definition:
+Then define a new package specifically for HTML generation:
 ```lisp
 (defpackage flute-user
   (:use :cl :flute))
 ```
-If you don't want to import all symbols, see [H Macro](#h-macro), which provide a similar interface as a tranditional Lisp HTML generation library.
+If you don't want to import all of the html symbols, see flute's [H Macro](#h-macro), which provides a similar interface to a traditional Lisp HTML generation library.
 
 ## Using html elements
 ```
@@ -39,13 +39,13 @@ If you don't want to import all symbols, see [H Macro](#h-macro), which provide 
         (img '((:src . "/img/cat.png")))))))
 ```
 
-These `html`, `div`, etc. are just functions. Element attribute can be given inline as the above example, or as alist/plist/attrs object as the first argument, like the last `a` and `img` in the above example. In this case they can be variables that calculated programmatically.
+Each tag, `html`, `div`, etc. is just a function. Element attributes can be given inline as in the above example, or as alist/plist/attrs-objects in the first argument, like the last `a` and `img` above. In this case they can be variables that are calculated programmatically.
 
-The remaining argument will be recognized as the children of this element. Each child can be:
-1. string;
-2. element, builtin or user defined;
-3. list of 1, 2 and 3. Can also be NIL.
-All children will be flattened as if they're given inline.
+The remaining arguments will be recognized as the children of the element. Each child can be either:
+1. a string
+2. an element, built-in or user-defined
+3. a list of any combination of 1, 2 and 3 (including NIL)
+All children will be flattened as if they were given inline.
 
 ## Define new element
 ```lisp
@@ -58,7 +58,7 @@ All children will be flattened as if they're given inline.
               children
               "dog")))
 ```
-`dog` will be defined as a function that takes `:id` and `:size` keyword arguments. `dog` returns an user-defined element object. Inside it, `children` will be replaced with the children elements you provided when creating this `dog`:
+`dog` will be defined as a function that takes `:id` and `:size` keyword arguments and returns a user-defined element object. Inside the define-element body, each use of `children` will be replaced by the children elements provided when calling the custom `dog` element:
 ```
 FLUTE-USER> (defparameter *dog1* (dog :id "dog1" :size 20))
 *DOG1*
@@ -72,7 +72,7 @@ FLUTE-USER> (dog :id "dog2" "I am a dog" *)
 </div>
 ```
 
-All elements, both builtin and user defined ones are objects, although they're printed as html snippet in REPL. Their attribute can be accessed by `(element-attrs element)`. Their children can be accessed by `(element-children elements)` and tag name by `(element-tag element)`. You can modify an exising element's attrs and children. If you modify a user defined element, the body you defined in it's `define-element` also re-executed to take effect of the the attrs and children change:
+All elements, both built-in and user-defined, are objects; although they're printed as html snippets in the REPL. Their attributes can be accessed by calling: `(element-attrs element)`, children can be accessed by calling: `(element-children elements)`, and likewise the tag name by calling: `(element-tag element)`. You can modify an exising element's attrs and children. If you do then its `define-element` body will be re-executed to take into account the updated attrs and children:
 ```
 FLUTE-USER> *dog1*
 <div id="dog1" class="big-dog">dog</div>
@@ -88,7 +88,7 @@ FLUTE-USER> *dog1*
 </div>
 ```
 
-By default user element is printed as what it expand to. If you have a lot of user defined element nested deeply, you probably want to have a look at the high level:
+By default user elements are printed as what they expand into. If you have a lot of user defined element nested deeply, you probably want to have a look at the high level:
 ```
 FLUTE-USER> (let ((*expand-user-element* nil))
               (print *dog1*)
@@ -100,18 +100,18 @@ FLUTE-USER>
 ```
 
 ## Generate HTML
-To generate a piece of HTML string that probably used in a response of a backend service:
+To generate an HTML string representation of an element, like what you would expect in the response of a backend service:
 ```lisp
 (elem-str element)
 ```
-To generate HTML string that has nice indent as that in REPL:
+To generate a pretty-printed HTML string with nice indentation, like how it's displayed in the REPL:
 ```lisp
 (element-string element)
 ```
-To generate that and write to file, just create a stream, then `(write element :stream stream)` for human or `(write element :stream stream :pretty nil)` for production.
+To write to a file, just create a stream, then call `(write element :stream stream)` for human readable HTML or `(write element :stream stream :pretty nil)` for production.
 
 ## H macro
-If you don't want to import all the symbols, you can use the `h` macro:
+If you don't want to import all of flute's external symbols, you can use the `h` macro:
 ```lisp
 (defpackage flute-min
   (:use :cl)
@@ -119,7 +119,7 @@ If you don't want to import all the symbols, you can use the `h` macro:
                 :h
                 :define-element))
 ```
-Then just wrap `h` for all html generation part. In the same examples above, it becomes:
+Then just wrap html element declarations with `h`. The same examples above become:
 ``` lisp
 (in-package :flute-min)
 (h (html
@@ -146,7 +146,7 @@ Then just wrap `h` for all html generation part. In the same examples above, it 
 
 (defparameter *dog2* (dog :id "dog2" :size 20 "some children"))
 ```
-From version 0.2 (available in Aug 2018 Quicklisp), flute supports css style id and class attribute for builtin elements. For example `div#id-name.class1.class2`, So you can also write:
+Since version 0.2 (available in the Aug 2018 Quicklisp distribution), flute supports css query selectors for the id and class attributes of built-in elements. For example `div#id-name.class1.class2`, So you can also write:
 ```lisp
 (h (div#a.b "..."))
 ;; Provide additional class and attributes
@@ -154,18 +154,18 @@ From version 0.2 (available in Aug 2018 Quicklisp), flute supports css style id 
 ```
 
 ## Inline CSS and JavaScript
-With help of [cl-css](https://github.com/Inaimathi/cl-css) (available in Quicklisp), You can write inline CSS for the `style` attribute, in a similar syntax like flute:
+With the help of [cl-css](https://github.com/Inaimathi/cl-css) (available in Quicklisp), You can write inline CSS for the `style` attribute, in a similar syntax as flute:
 ```lisp
 (div :style (inline-css '(:margin 5px :padding 0px)))
 ```
-`cl-css:inline-css` is a function taking plist and returns the result css string, so it can be safely used inside or outside of `H` macro and with variable arguments.
+`cl-css:inline-css` is a function that takes a plist and returns the associated css string, so it can be safely used inside or outside of the `H` macro and with variable arguments.
 
-With help of [Parenscript](https://github.com/vsedach/Parenscript) (available in Quicklisp), You can write inline JavaScript for `onclick`, etc. attribute:
+With help of [Parenscript](https://github.com/vsedach/Parenscript) (available in Quicklisp), You can write inline JavaScript for `onclick` and similar attributes:
 ```lisp
 (button :onclick (ps-inline (func)))
 ```
 
-That's all you need to know to define elements and generate html. Please reference the [API Reference](#api-reference) Section for detailed API.
+That's all you need to know to define elements and generate html. Please reference the [API Reference](#api-reference) Section for detailed API documentation.
 
 # Change Logs
 ## 2018/07/28 Version 0.2-dev
@@ -207,11 +207,11 @@ All of above HTML5 elements are functions, which support same kinds of parameter
 ;; Create and return an <a> element object
 ;; ATTRS-AND-CHILDREN can be the following:
 
-;; 1. an empty <a> tag
+;; 1. an empty <a></a> tag
 (a)
 
 ;; 2. attributes of alist, plist or ATTRS object
-;; The following creates: <a id="aa" customer-attr="bb">
+;; The following creates: <a id="aa" customer-attr="bb"></a>
 (a :id "aa" :customer-attr "bb")
 (a '(:id "aa" :customer-attr "bb"))
 (a '((:id . "aa") (:customer-attr . "bb")))
