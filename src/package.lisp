@@ -39,6 +39,7 @@
 
    ;;; element slots
    :element-tag
+   :element-self-closing-p
    :element-attrs
    :element-children
    :user-element-expand-to

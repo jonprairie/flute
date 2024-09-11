@@ -3,12 +3,15 @@
 (defclass element ()
   ((tag :initarg :tag
         :accessor element-tag)
+   (self-closing-p :initarg :self-closing-p
+                   :accessor element-self-closing-p)
    (attrs :initarg :attrs
           :accessor element-attrs)
    (children :initarg :children
              :accessor element-children)))
 
-(defclass builtin-element (element) ())
+(defclass builtin-element (element)
+  ())
 
 (defclass builtin-element-with-prefix (builtin-element)
   ((prefix :initarg :prefix
@@ -18,16 +21,27 @@
   ((expand-to :initarg :expander
               :accessor user-element-expander)))
 
-(defun make-builtin-element (&key tag attrs children)
-  (make-instance 'builtin-element :tag tag :attrs attrs
+(defun make-builtin-element (&key tag attrs self-closing-p children)
+  (make-instance 'builtin-element
+                 :tag tag
+                 :self-closing-p self-closing-p
+                 :attrs attrs
                  :children (escape-children children)))
 
-(defun make-builtin-element-with-prefix (&key tag attrs children prefix)
-  (make-instance 'builtin-element-with-prefix :tag tag :attrs attrs :prefix prefix
+(defun make-builtin-element-with-prefix (&key tag attrs self-closing-p children prefix)
+  (make-instance 'builtin-element-with-prefix
+                 :tag tag
+                 :self-closing-p self-closing-p
+                 :attrs attrs
+                 :prefix prefix
                  :children (escape-children children)))
 
-(defun make-user-element (&rest args &key tag attrs children expander)
-  (make-instance 'user-element :tag tag :attrs attrs :expander expander
+(defun make-user-element (&rest args &key tag self-closing-p attrs children expander)
+  (make-instance 'user-element
+                 :tag tag
+                 :self-closing-p self-closing-p
+                 :attrs attrs
+                 :expander expander
                  :children (escape-children children)))
 
 (defmethod user-element-expand-to ((element user-element))
@@ -74,11 +88,19 @@ When given :ASCII and :ATTR, it's possible to insert html text as a children, e.
   (attr (element-attrs element) key))
 
 (defvar *builtin-elements* (make-hash-table))
+(defvar *self-closing-builtin-elements* (make-hash-table))
+
+(mapcan (lambda (element-name)
+          (setf (gethash element-name *self-closing-builtin-elements*) t))
+        '(area base br col embed hr img input link meta param source track wbr
+          command keygen menuitem frame))
 
 (defun html (&rest attrs-and-children)
   (multiple-value-bind (attrs children)
       (split-attrs-and-children attrs-and-children)
-    (make-builtin-element-with-prefix :tag "html" :attrs attrs
+    (make-builtin-element-with-prefix :tag "html"
+                                      :attrs attrs
+                                      :self-closing-p nil
                                       :children children
                                       :prefix "<!DOCTYPE html>")))
 (setf (gethash :html *builtin-elements*) t)
@@ -87,8 +109,11 @@ When given :ASCII and :ATTR, it's possible to insert html text as a children, e.
   `(defun ,element-name (&rest attrs-and-children)
      (multiple-value-bind (attrs children)
          (split-attrs-and-children attrs-and-children)
-       (make-builtin-element :tag (string-downcase (mkstr ',element-name))
-                             :attrs attrs :children children))))
+       (let ((self-closing-p (gethash ',element-name *self-closing-builtin-elements*)))
+         (make-builtin-element :tag (string-downcase (mkstr ',element-name))
+                               :attrs attrs
+                               :self-closing-p self-closing-p
+                               :children children)))))
 
 (defmacro define-and-export-builtin-elements (&rest element-names)
   `(progn
@@ -123,7 +148,9 @@ When given :ASCII and :ATTR, it's possible to insert html text as a children, e.
               (element-attrs element)
               (element-children element)
               (element-tag element))
-      (format stream "<~a~a>" (element-tag element) (element-attrs element))))
+      (if (element-self-closing-p element)
+          (format stream "<~a~a>" (element-tag element) (element-attrs element))
+          (format stream "<~a~a></~2:*~a>" (element-tag element) (element-attrs element)))))
 
 (defmethod print-object ((element builtin-element-with-prefix) stream)
   (format stream "~a~%" (element-prefix element))
