@@ -90,10 +90,10 @@ When given :ASCII and :ATTR, it's possible to insert html text as a children, e.
 (defvar *builtin-elements* (make-hash-table))
 (defvar *self-closing-builtin-elements* (make-hash-table))
 
-(mapcan (lambda (element-name)
-          (setf (gethash element-name *self-closing-builtin-elements*) t))
-        '(area base br col embed hr img input link meta param source track wbr
-          command keygen menuitem frame))
+(mapc (lambda (element-name)
+        (setf (gethash element-name *self-closing-builtin-elements*) t))
+      '(area base br col embed hr img input link meta param source track wbr
+        command keygen menuitem frame))
 
 (defun html (&rest attrs-and-children)
   (multiple-value-bind (attrs children)
